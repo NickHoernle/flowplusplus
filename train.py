@@ -40,10 +40,10 @@ def main(args):
         transforms.ToTensor()
     ])
 
-    trainset = torchvision.datasets.CIFAR10(root='data', train=True, download=True, transform=transform_train)
+    trainset = torchvision.datasets.CIFAR100(root=args.input, train=True, download=True, transform=transform_train)
     trainloader = data.DataLoader(trainset, batch_size=args.batch_size, shuffle=True, num_workers=args.num_workers)
 
-    testset = torchvision.datasets.CIFAR10(root='data', train=False, download=True, transform=transform_test)
+    testset = torchvision.datasets.CIFAR100(root=args.input, train=False, download=True, transform=transform_test)
     testloader = data.DataLoader(testset, batch_size=args.batch_size, shuffle=False, num_workers=args.num_workers)
 
     # Model
@@ -62,11 +62,13 @@ def main(args):
         cudnn.benchmark = args.benchmark
 
     start_epoch = 0
+    save_dir = os.path.join(args.output, 'save')
+
     if args.resume:
         # Load checkpoint.
         print('Resuming from checkpoint at save/best.pth.tar...')
-        assert os.path.isdir('save'), 'Error: no checkpoint directory found!'
-        checkpoint = torch.load('save/best.pth.tar')
+        assert os.path.isdir(save_dir), 'Error: no checkpoint directory found!'
+        checkpoint = torch.load(os.path.join(save_dir, 'best.pth.tar'))
         net.load_state_dict(checkpoint['net'])
         global best_loss
         global global_step
@@ -83,7 +85,7 @@ def main(args):
     for epoch in range(start_epoch, start_epoch + args.num_epochs):
         train(epoch, net, trainloader, device, optimizer, scheduler,
               loss_fn, args.max_grad_norm)
-        test(epoch, net, testloader, device, loss_fn, args.num_samples, args.save_dir)
+        test(epoch, net, testloader, device, loss_fn, args.num_samples, save_dir)
 
 
 @torch.enable_grad()
@@ -151,16 +153,17 @@ def test(epoch, net, testloader, device, loss_fn, num_samples, save_dir):
             'test_loss': loss_meter.avg,
             'epoch': epoch,
         }
-        os.makedirs('save', exist_ok=True)
-        torch.save(state, 'save/best.pth.tar')
+        os.makedirs(save_dir, exist_ok=True)
+        torch.save(state, os.path.join(save_dir, 'best.pth.tar'))
         best_loss = loss_meter.avg
 
     # Save samples and data
     images = sample(net, num_samples, device)
-    os.makedirs(save_dir, exist_ok=True)
+    samp_dir = os.path.join(save_dir, 'save')
+    os.makedirs(samp_dir, exist_ok=True)
     images_concat = torchvision.utils.make_grid(images, nrow=int(num_samples ** 0.5), padding=2, pad_value=255)
     torchvision.utils.save_image(images_concat,
-                                 os.path.join(save_dir, 'epoch_{}.png'.format(epoch)))
+                                 os.path.join(samp_dir, 'epoch_{}.png'.format(epoch)))
 
 
 if __name__ == '__main__':
@@ -184,8 +187,10 @@ if __name__ == '__main__':
     parser.add_argument('--num_workers', default=4, type=int, help='Number of data loader threads')
     parser.add_argument('--resume', type=str2bool, default=False, help='Resume from checkpoint')
     parser.add_argument('--seed', type=int, default=0, help='Random seed for reproducibility')
-    parser.add_argument('--save_dir', type=str, default='samples', help='Directory for saving samples')
     parser.add_argument('--use_attn', type=str2bool, default=True, help='Use attention in the coupling layers')
+    parser.add_argument('--save_dir', type=str, default='samples', help='Directory for saving samples')
+    parser.add_argument('-i', '--input', type=str, required=True, help='Input data dir')
+    parser.add_argument('-o', '--output', type=str, required=True, help='Output data dir')
     parser.add_argument('--warm_up', type=int, default=200, help='Number of batches for LR warmup')
     parser.add_argument('--weight_decay', default=5e-5, type=float,
                         help='L2 regularization (only applied to the weight norm scale factors)')
