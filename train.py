@@ -175,7 +175,7 @@ if __name__ == '__main__':
         return s.lower().startswith('t')
 
     parser.add_argument('--batch_size', default=256, type=int, help='Batch size per GPU')
-    parser.add_argument('--benchmark', type=str2bool, default=True, help='Turn on CUDNN benchmarking')
+    parser.add_argument('--benchmark', type=str2bool, default=False, help='Turn on CUDNN benchmarking')
     parser.add_argument('--gpu_ids', default=[0, 1, 2, 3], type=eval, help='IDs of GPUs to use')
     parser.add_argument('--lr', default=1e-3, type=float, help='Peak learning rate')
     parser.add_argument('--max_grad_norm', type=float, default=1., help='Max gradient norm for clipping')
