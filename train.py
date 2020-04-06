@@ -40,10 +40,10 @@ def main(args):
         transforms.ToTensor()
     ])
 
-    trainset = torchvision.datasets.CIFAR100(root=args.input, train=True, download=True, transform=transform_train)
+    trainset = torchvision.datasets.CIFAR10(root=args.input, train=True, download=True, transform=transform_train)
     trainloader = data.DataLoader(trainset, batch_size=args.batch_size, shuffle=True, num_workers=args.num_workers)
 
-    testset = torchvision.datasets.CIFAR100(root=args.input, train=False, download=True, transform=transform_test)
+    testset = torchvision.datasets.CIFAR10(root=args.input, train=False, download=True, transform=transform_test)
     testloader = data.DataLoader(testset, batch_size=args.batch_size, shuffle=False, num_workers=args.num_workers)
 
     # Model
@@ -57,6 +57,7 @@ def main(args):
                        use_attn=args.use_attn,
                        drop_prob=args.drop_prob)
     net = net.to(device)
+
     if device == 'cuda':
         net = torch.nn.DataParallel(net, args.gpu_ids)
         cudnn.benchmark = args.benchmark
@@ -78,6 +79,7 @@ def main(args):
 
     loss_fn = util.NLLLoss().to(device)
     param_groups = util.get_param_groups(net, args.weight_decay, norm_suffix='weight_g')
+
     optimizer = optim.Adam(param_groups, lr=args.lr)
     warm_up = args.warm_up * args.batch_size
     scheduler = sched.LambdaLR(optimizer, lambda s: min(1., s / warm_up))
@@ -172,7 +174,7 @@ if __name__ == '__main__':
     def str2bool(s):
         return s.lower().startswith('t')
 
-    parser.add_argument('--batch_size', default=8, type=int, help='Batch size per GPU')
+    parser.add_argument('--batch_size', default=256, type=int, help='Batch size per GPU')
     parser.add_argument('--benchmark', type=str2bool, default=True, help='Turn on CUDNN benchmarking')
     parser.add_argument('--gpu_ids', default=[0, 1, 2, 3], type=eval, help='IDs of GPUs to use')
     parser.add_argument('--lr', default=1e-3, type=float, help='Peak learning rate')

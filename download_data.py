@@ -12,4 +12,4 @@ transform_test = transforms.Compose([
     transforms.ToTensor()
 ])
 
-trainset = torchvision.datasets.CIFAR100(root='data', train=True, download=True, transform=transform_train)
+trainset = torchvision.datasets.CIFAR10(root='data', train=True, download=True, transform=transform_train)
